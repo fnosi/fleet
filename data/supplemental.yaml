@@ -1,0 +1,6 @@
+mt-03:
+  node_id: mt03-offgrid
+  pubkey: ZYXWVUTSRQPONMLKJIHGfedcba==
+  wg_ip: 10.0.5.11
+  roles: []
+ 
