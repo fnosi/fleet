@@ -1,39 +1,39 @@
 #!/usr/bin/env python3
-import json
-import yaml
-import hmac
-import hashlib
-import base64
+import json, yaml, hmac, hashlib, base64, re
 from pathlib import Path
 
 # Paths
 TAILNET_PATH = Path("data/tailnet.json")
 SUPPLEMENTAL_PATH = Path("data/supplemental.yaml")
 INVENTORY_PATH = Path("inventories/hosts.yaml")
-VAULT_PATH = Path("vault")
-PASS_PATH = VAULT_PATH / ".pass"
-KEYS_PATH = VAULT_PATH / "privatekeys"
+PRIVATE_KEY_DIR = Path("vault/privatekeys")
+PASSWORD_FILE = Path("vault/.pass")
 
-# Load nodes from Tailscale
+# Tag identifiers
+WG_TAG = "tag:wireguard"
+WG_SUBNET_TAG_PREFIX = "tag:wgnet-"
+
 def load_tailnet(path):
-    with path.open() as f:
+    with open(path) as f:
         data = json.load(f)
+
     result = {}
-    for node in data["Peer"].values():
-        name = node["HostName"]
+    for node in data.get("Peer", {}).values():
+        name = node.get("HostName")
         tags = node.get("Tags", [])
-        if "tag:wireguard" in tags:
-            result[name] = {
-                "roles": [],
-                "source": "tailnet"
-            }
+        if not name or WG_TAG not in tags:
+            continue
+        result[name] = {
+            "roles": [],
+            "source": "tailnet",
+            "tags": tags,
+        }
     return result
 
-# Merge in supplemental data
 def merge_static(path, base):
     if not path.exists():
         return base
-    with path.open() as f:
+    with open(path) as f:
         static = yaml.safe_load(f) or {}
     for host, overrides in static.items():
         if host not in base:
@@ -43,34 +43,66 @@ def merge_static(path, base):
             base[host].update(overrides)
     return base
 
-# Write final Ansible inventory file
+def derive_private_key(hostname, master_secret):
+    key = hmac.new(master_secret.encode(), hostname.encode(), hashlib.sha256).digest()
+    return base64.b64encode(key[:32]).decode()
+
+def ensure_private_keys(hosts):
+    if not PASSWORD_FILE.exists():
+        raise FileNotFoundError(f"Missing password file at {PASSWORD_FILE}")
+    password = PASSWORD_FILE.read_text().strip()
+    PRIVATE_KEY_DIR.mkdir(parents=True, exist_ok=True)
+
+    print("🔐 Ensuring private keys for all hosts...")
+    for host in sorted(hosts):
+        key_path = PRIVATE_KEY_DIR / f"{host}.key"
+        if key_path.exists():
+            continue
+        privkey = derive_private_key(host, password)
+        key_path.write_text(privkey + "\n")
+        print(f"🔑 Generated key for {host}")
+
+def parse_wg_subnet(tags):
+    for tag in tags:
+        if tag.startswith(WG_SUBNET_TAG_PREFIX):
+            subnet_str = tag[len(WG_SUBNET_TAG_PREFIX):]
+            match = re.match(r"(\d+)-(\d+)-(\d+)-(\d+)--(\d+)", subnet_str)
+            if match:
+                base = ".".join(match.groups()[:4])
+                prefix = int(match.group(5))
+                return base, prefix
+    return None, None
+
+def pubkey_to_octet(pubkey: str) -> int:
+    raw = base64.b64decode(pubkey.strip())
+    h = hashlib.sha256(raw).digest()
+    return 100 + (h[0] % 100)
+
+def assign_wg_ips(inventory):
+    for host, meta in inventory.items():
+        key_path = PRIVATE_KEY_DIR / f"{host}.key"
+        if not key_path.exists():
+            continue
+        privkey = key_path.read_text().strip()
+        pubkey = base64.b64encode(
+            hashlib.sha256(base64.b64decode(privkey)).digest()
+        ).decode()
+
+        base_ip, prefix = parse_wg_subnet(meta.get("tags", []))
+        if base_ip is None:
+            print(f"⚠️  No wg-subnet tag found for {host}, skipping IP assign")
+            continue
+
+        last_octet = pubkey_to_octet(pubkey)
+        meta["wg_address"] = f"{base_ip}.{last_octet}"
+        meta["wg_cidr"] = f"{base_ip}/{prefix}"
+    return inventory
+
 def write_inventory(inventory):
     ordered = dict(sorted(inventory.items()))
     with INVENTORY_PATH.open("w") as f:
         yaml.dump({"all": {"hosts": ordered}}, f, sort_keys=False)
 
-# Derive private key bytes using HMAC-SHA256
-def derive_private_key_bytes(hostname: str, secret: bytes) -> bytes:
-    return hmac.new(secret, hostname.encode(), hashlib.sha256).digest()[:32]
-
-# Generate private keys for each host if missing
-def ensure_private_keys(hosts: dict):
-    if not PASS_PATH.exists():
-        print("❌ Missing vault/.pass file for key derivation.")
-        return
-    KEYS_PATH.mkdir(parents=True, exist_ok=True)
-    secret = PASS_PATH.read_text().strip().encode()
-
-    for hostname in hosts:
-        key_path = KEYS_PATH / f"{hostname}.key"
-        if key_path.exists():
-            continue
-        priv = derive_private_key_bytes(hostname, secret)
-        encoded = base64.b64encode(priv).decode()
-        key_path.write_text(encoded + "\n")
-        print(f"🔑 Generated key for {hostname}")
-
-# Main logic
 def main():
     print(f"📥 Reading Tailscale data from {TAILNET_PATH}")
     base = load_tailnet(TAILNET_PATH)
@@ -79,12 +111,12 @@ def main():
         print(f"➕ Merging supplemental data from {SUPPLEMENTAL_PATH}")
     merged = merge_static(SUPPLEMENTAL_PATH, base)
 
-    print(f"📤 Writing inventory to {INVENTORY_PATH}")
     write_inventory(merged)
     print(f"✅ Done. {len(merged)} total hosts.")
 
-    print(f"🔐 Ensuring private keys for all hosts...")
-    ensure_private_keys(merged)
+    ensure_private_keys(merged.keys())
+    assign_wg_ips(merged)
+    write_inventory(merged)
 
 if __name__ == "__main__":
     main()
