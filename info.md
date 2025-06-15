@@ -154,6 +154,7 @@ wireguard-inventory/
 
 ## Notes
 
+* All Ansible-based automation and configuration management will operate over the existing Tailscale network, ensuring reachability from any Linux node in the fleet regardless of NAT or public IP conditions.
 * Max expected node count: \~30 (full mesh feasible)
 * Inventory is the only source of truth — all configs are derived
 * MTU tuning: defaults to 1280 unless overridden
