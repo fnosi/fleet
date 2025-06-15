@@ -66,6 +66,7 @@ Covers:
 
 Merged output of dynamic + static sources.
 Used for generation, validation, routing decisions, and monitoring.
+Also contains enough metadata to generate complete MikroTik WireGuard configuration blocks.
 
 ---
 
@@ -74,7 +75,7 @@ Used for generation, validation, routing decisions, and monitoring.
 ### Output Targets:
 
 * `wgkaronti0.conf` for Linux
-* MikroTik export script (`.rsc`)
+* MikroTik export script (`.rsc`) — fully generated from `peers.yaml`
 * Optional: QR-based phone configs
 
 ### Generator Behavior:
@@ -90,6 +91,11 @@ Used for generation, validation, routing decisions, and monitoring.
     * Use FQDN from Tailscale DNS if possible
     * Allow optional use of Tailscale public key to seed/derive WG private key (deterministically or as metadata link)
     * Tags from Tailscale may influence behavior (e.g., setting as relay, routing policies)
+* MikroTik script generator uses same data to emit:
+
+  * `/interface wireguard` with interface + private key
+  * `/interface wireguard peers` blocks
+  * Optional: routing rules, firewall, address lists based on inventory metadata
 
 ### Optional Extensions:
 
@@ -108,7 +114,8 @@ wireguard-inventory/
 ├── supplemental.yaml       # statics (MTs, etc)
 ├── keys/                   # per-host key storage
 ├── templates/
-│   └── wgkaronti0.conf.j2  # Jinja template
+│   └── wgkaronti0.conf.j2  # Jinja template (Linux)
+│   └── wgkaronti0.rsc.j2   # Jinja template (MikroTik)
 ├── generate.py             # generator script
 └── out/
     └── wgkaronti0-karonti-it01.conf
@@ -133,6 +140,7 @@ wireguard-inventory/
 
 * [ ] Parse unified inventory
 * [ ] Render per-host `wgkaronti0.conf` via Jinja2
+* [ ] Render MikroTik `.rsc` config from same inventory
 * [ ] Output to `out/` folder
 
 ### Phase 4: Extra Tooling (optional)
