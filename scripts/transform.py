@@ -1,34 +1,29 @@
 #!/usr/bin/env python3
-import json, yaml, os
+import json, yaml
 from pathlib import Path
 
-TAILNET_PATH = "data/tailnet.json"
-SUPPLEMENT_PATH = "data/supplemental.yaml"
-INVENTORY_PATH = "inventories/hosts.yaml"
-TAG = "tag:wireguard"
+TAILNET_PATH = Path("data/tailnet.json")
+SUPPLEMENTAL_PATH = Path("data/supplemental.yaml")
+INVENTORY_PATH = Path("inventories/hosts.yaml")
 
-def sanitize(name):
-    return name.replace(" ", "_")
-
-def load_tailnet():
-    with open(TAILNET_PATH) as f:
+def load_tailnet(path):
+    with open(path) as f:
         data = json.load(f)
-    peers = data.get("Peer", {})
-    out = {}
-    for peer in peers.values():
-        hostname = peer.get("HostName")
-        tags = peer.get("Tags", [])
-        if TAG in tags and hostname:
-            out[hostname] = {
+    result = {}
+    for node in data["Peer"].values():
+        name = node["HostName"]
+        tags = node.get("Tags", [])
+        if "tag:wireguard" in tags:
+            result[name] = {
                 "roles": [],
                 "source": "tailnet"
             }
-    return out
+    return result
 
-def merge_static(base):
-    if not Path(SUPPLEMENT_PATH).exists():
+def merge_static(path, base):
+    if not path.exists():
         return base
-    with open(SUPPLEMENT_PATH) as f:
+    with open(path) as f:
         static = yaml.safe_load(f) or {}
     for host, overrides in static.items():
         if host not in base:
@@ -38,21 +33,19 @@ def merge_static(base):
             base[host].update(overrides)
     return base
 
-import yaml
-
-def write_inventory(merged):
-    outdict = {"all": {"hosts": {}}}
-    for host, meta in sorted(merged.items()):
-        outdict["all"]["hosts"][sanitize(host)] = meta
-    os.makedirs(os.path.dirname(INVENTORY_PATH), exist_ok=True)
-    with open(INVENTORY_PATH, "w") as f:
-        yaml.dump(outdict, f, sort_keys=False)
+def write_inventory(inventory):
+    ordered = dict(sorted(inventory.items()))
+    with INVENTORY_PATH.open("w") as f:
+        yaml.dump({"all": {"hosts": ordered}}, f, sort_keys=False)
 
 def main():
     print(f"📥 Reading Tailscale data from {TAILNET_PATH}")
-    hosts = load_tailnet()
-    print(f"➕ Merging supplemental data from {SUPPLEMENT_PATH}")
-    merged = merge_static(hosts)
+    base = load_tailnet(TAILNET_PATH)
+
+    if SUPPLEMENTAL_PATH.exists():
+        print(f"➕ Merging supplemental data from {SUPPLEMENTAL_PATH}")
+    merged = merge_static(SUPPLEMENTAL_PATH, base)
+
     print(f"📤 Writing inventory to {INVENTORY_PATH}")
     write_inventory(merged)
     print(f"✅ Done. {len(merged)} total hosts.")

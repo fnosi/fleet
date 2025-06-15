@@ -29,12 +29,12 @@
       "tag:wireguard"
     ],
     "Addrs": [
-      "141.98.141.194:15415",
+      "141.98.141.194:61345",
       "141.98.141.194:41641",
-      "141.98.141.194:15951",
-      "141.98.141.194:15434",
-      "141.98.141.194:15441",
-      "141.98.141.194:15378",
+      "141.98.141.194:45622",
+      "141.98.141.194:45658",
+      "141.98.141.194:45651",
+      "141.98.141.194:45660",
       "192.168.41.249:41641",
       "192.168.122.1:41641"
     ],
@@ -200,15 +200,15 @@
       "CurAddr": "",
       "Relay": "fra",
       "RxBytes": 0,
-      "TxBytes": 0,
+      "TxBytes": 2960,
       "Created": "2024-02-06T17:50:59.934488709Z",
-      "LastWrite": "0001-01-01T00:00:00Z",
+      "LastWrite": "2025-06-15T20:42:21.048692024+02:00",
       "LastSeen": "2025-04-16T19:18:07.1Z",
       "LastHandshake": "0001-01-01T00:00:00Z",
       "Online": false,
       "ExitNode": false,
       "ExitNodeOption": true,
-      "Active": false,
+      "Active": true,
       "PeerAPIURL": [
         "http://100.104.185.116:58206",
         "http://[fd7a:115c:a1e0::73a8:b974]:62750"
@@ -217,7 +217,7 @@
       "NoFileSharingReason": "",
       "InNetworkMap": true,
       "InMagicSock": true,
-      "InEngine": false
+      "InEngine": true
     },
     "nodekey:32ec7664123244fcfd41ddcc3b230d1a0180fb1a7340a6502d00a6d0dd5b970a": {
       "ID": "nK3WK6R9W321CNTRL",
@@ -535,18 +535,18 @@
         "192.168.84.0/24"
       ],
       "Addrs": null,
-      "CurAddr": "",
+      "CurAddr": "192.168.20.120:41641",
       "Relay": "fra",
-      "RxBytes": 28252,
-      "TxBytes": 224996,
+      "RxBytes": 92972,
+      "TxBytes": 683492,
       "Created": "2024-02-06T17:55:34.683010093Z",
-      "LastWrite": "2025-06-15T19:00:52.553263438+02:00",
+      "LastWrite": "2025-06-15T20:41:38.540947915+02:00",
       "LastSeen": "0001-01-01T00:00:00Z",
-      "LastHandshake": "2025-06-15T18:59:22.459171005+02:00",
+      "LastHandshake": "2025-06-15T20:40:37.82663496+02:00",
       "Online": true,
       "ExitNode": false,
       "ExitNodeOption": false,
-      "Active": false,
+      "Active": true,
       "PeerAPIURL": [
         "http://100.109.33.86:57411",
         "http://[fd7a:115c:a1e0::6c6d:2156]:57411"
@@ -581,15 +581,15 @@
       "CurAddr": "",
       "Relay": "par",
       "RxBytes": 0,
-      "TxBytes": 0,
+      "TxBytes": 2960,
       "Created": "2024-02-06T12:18:29.70161292Z",
-      "LastWrite": "0001-01-01T00:00:00Z",
+      "LastWrite": "2025-06-15T20:42:21.760162082+02:00",
       "LastSeen": "2024-04-06T15:15:16.1Z",
       "LastHandshake": "0001-01-01T00:00:00Z",
       "Online": false,
       "ExitNode": false,
       "ExitNodeOption": true,
-      "Active": false,
+      "Active": true,
       "PeerAPIURL": [
         "http://100.64.193.57:47829",
         "http://[fd7a:115c:a1e0::cb80:c139]:44181"
@@ -598,7 +598,7 @@
       "NoFileSharingReason": "",
       "InNetworkMap": true,
       "InMagicSock": true,
-      "InEngine": false
+      "InEngine": true
     },
     "nodekey:81c35b18dd047f6b9eabb71190abcab0a8728962fd5ed02cad8618008114d449": {
       "ID": "nvKsVN31j411CNTRL",
@@ -623,16 +623,16 @@
       "Addrs": null,
       "CurAddr": "",
       "Relay": "lhr",
-      "RxBytes": 0,
-      "TxBytes": 0,
+      "RxBytes": 17196,
+      "TxBytes": 116372,
       "Created": "2024-02-06T12:14:47.996567397Z",
-      "LastWrite": "0001-01-01T00:00:00Z",
+      "LastWrite": "2025-06-15T20:41:44.627902469+02:00",
       "LastSeen": "0001-01-01T00:00:00Z",
-      "LastHandshake": "0001-01-01T00:00:00Z",
+      "LastHandshake": "2025-06-15T20:40:40.725716055+02:00",
       "Online": true,
       "ExitNode": false,
       "ExitNodeOption": true,
-      "Active": false,
+      "Active": true,
       "PeerAPIURL": [
         "http://100.65.100.94:60597",
         "http://[fd7a:115c:a1e0::c981:645e]:64245"
@@ -644,7 +644,7 @@
       },
       "InNetworkMap": true,
       "InMagicSock": true,
-      "InEngine": false
+      "InEngine": true
     },
     "nodekey:87da11ffb72fa9bc3723c3bb60b1407b97ff3dee1a925660b68bc3b99846120f": {
       "ID": "nC6yLXJWv611CNTRL",
@@ -751,18 +751,18 @@
         "tag:wireguard"
       ],
       "Addrs": null,
-      "CurAddr": "",
+      "CurAddr": "86.107.110.5:41641",
       "Relay": "fra",
-      "RxBytes": 6924,
-      "TxBytes": 7828,
+      "RxBytes": 18652,
+      "TxBytes": 117028,
       "Created": "2024-12-23T15:38:49.766063145Z",
-      "LastWrite": "2025-06-15T19:00:34.499264213+02:00",
+      "LastWrite": "2025-06-15T20:41:51.619298541+02:00",
       "LastSeen": "0001-01-01T00:00:00Z",
-      "LastHandshake": "2025-06-15T19:00:32.323770264+02:00",
+      "LastHandshake": "2025-06-15T20:40:38.025581004+02:00",
       "Online": true,
       "ExitNode": false,
       "ExitNodeOption": true,
-      "Active": false,
+      "Active": true,
       "PeerAPIURL": [
         "http://100.92.127.25:49983",
         "http://[fd7a:115c:a1e0::5b01:7f19]:65244"
@@ -879,18 +879,18 @@
         "tag:wireguard"
       ],
       "Addrs": null,
-      "CurAddr": "",
+      "CurAddr": "192.168.20.130:41641",
       "Relay": "par",
-      "RxBytes": 30204,
-      "TxBytes": 227364,
+      "RxBytes": 17036,
+      "TxBytes": 115716,
       "Created": "2024-02-15T09:06:06.53510002Z",
-      "LastWrite": "2025-06-15T19:00:52.55333002+02:00",
+      "LastWrite": "2025-06-15T20:41:39.552094463+02:00",
       "LastSeen": "0001-01-01T00:00:00Z",
-      "LastHandshake": "2025-06-15T18:59:23.494937486+02:00",
+      "LastHandshake": "2025-06-15T20:40:37.809583065+02:00",
       "Online": true,
       "ExitNode": false,
       "ExitNodeOption": false,
-      "Active": false,
+      "Active": true,
       "PeerAPIURL": [
         "http://100.64.78.78:56014",
         "http://[fd7a:115c:a1e0::d440:4e4e]:56014"
@@ -922,18 +922,18 @@
         "tag:wireguard"
       ],
       "Addrs": null,
-      "CurAddr": "",
+      "CurAddr": "83.229.82.244:41641",
       "Relay": "ams",
-      "RxBytes": 0,
-      "TxBytes": 0,
+      "RxBytes": 19820,
+      "TxBytes": 116980,
       "Created": "2024-02-15T04:10:32.401170243Z",
-      "LastWrite": "0001-01-01T00:00:00Z",
+      "LastWrite": "2025-06-15T20:41:44.620323803+02:00",
       "LastSeen": "0001-01-01T00:00:00Z",
-      "LastHandshake": "0001-01-01T00:00:00Z",
+      "LastHandshake": "2025-06-15T20:40:39.558874063+02:00",
       "Online": true,
       "ExitNode": false,
       "ExitNodeOption": true,
-      "Active": false,
+      "Active": true,
       "PeerAPIURL": [
         "http://100.86.159.88:50179",
         "http://[fd7a:115c:a1e0::6f96:9f58]:53827"
@@ -945,7 +945,7 @@
       },
       "InNetworkMap": true,
       "InMagicSock": true,
-      "InEngine": false
+      "InEngine": true
     },
     "nodekey:c423d7896ed3cd04b3380befeacc591520bb8ea096723fdaa33cf096a6081226": {
       "ID": "nJmKyCexQB11CNTRL",
@@ -968,16 +968,16 @@
       "Addrs": null,
       "CurAddr": "",
       "Relay": "fra",
-      "RxBytes": 5516,
-      "TxBytes": 6436,
+      "RxBytes": 18236,
+      "TxBytes": 115988,
       "Created": "2025-06-14T02:32:04.295424813Z",
-      "LastWrite": "2025-06-15T19:00:48.166968538+02:00",
+      "LastWrite": "2025-06-15T20:41:41.620938744+02:00",
       "LastSeen": "0001-01-01T00:00:00Z",
-      "LastHandshake": "2025-06-15T19:00:46.80106474+02:00",
+      "LastHandshake": "2025-06-15T20:40:38.025358017+02:00",
       "Online": true,
       "ExitNode": false,
       "ExitNodeOption": false,
-      "Active": false,
+      "Active": true,
       "PeerAPIURL": [
         "http://100.72.18.39:49362",
         "http://[fd7a:115c:a1e0::a601:122a]:35360"
@@ -1012,16 +1012,16 @@
       "Addrs": null,
       "CurAddr": "",
       "Relay": "ord",
-      "RxBytes": 0,
-      "TxBytes": 0,
+      "RxBytes": 18732,
+      "TxBytes": 115508,
       "Created": "2024-02-06T12:15:08.401489608Z",
-      "LastWrite": "0001-01-01T00:00:00Z",
+      "LastWrite": "2025-06-15T20:41:50.710893237+02:00",
       "LastSeen": "0001-01-01T00:00:00Z",
-      "LastHandshake": "0001-01-01T00:00:00Z",
+      "LastHandshake": "2025-06-15T20:40:42.778370987+02:00",
       "Online": true,
       "ExitNode": false,
       "ExitNodeOption": true,
-      "Active": false,
+      "Active": true,
       "PeerAPIURL": [
         "http://100.89.188.32:36177",
         "http://[fd7a:115c:a1e0::79d9:bc20]:38609"
@@ -1033,7 +1033,7 @@
       },
       "InNetworkMap": true,
       "InMagicSock": true,
-      "InEngine": false
+      "InEngine": true
     },
     "nodekey:c724024d02695794fc25273512fd562bcbe85b0b1e4563c12b79b522cd4a7f34": {
       "ID": "nMrJ3a7hDd11CNTRL",
@@ -1260,18 +1260,18 @@
         "tag:wireguard"
       ],
       "Addrs": null,
-      "CurAddr": "",
+      "CurAddr": "45.147.250.191:41641",
       "Relay": "ams",
-      "RxBytes": 7004,
-      "TxBytes": 7732,
+      "RxBytes": 78880,
+      "TxBytes": 468816,
       "Created": "2024-02-06T12:33:50.341995329Z",
-      "LastWrite": "2025-06-15T19:00:53.879318189+02:00",
+      "LastWrite": "2025-06-15T20:41:52.851954032+02:00",
       "LastSeen": "0001-01-01T00:00:00Z",
-      "LastHandshake": "2025-06-15T19:00:51.42693481+02:00",
+      "LastHandshake": "2025-06-15T20:40:37.855960419+02:00",
       "Online": true,
       "ExitNode": false,
       "ExitNodeOption": true,
-      "Active": false,
+      "Active": true,
       "PeerAPIURL": [
         "http://100.110.203.50:57405",
         "http://[fd7a:115c:a1e0::b82e:cb32]:60925"

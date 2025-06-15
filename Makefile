@@ -1,20 +1,28 @@
+# Makefile for WireGuard automation
+
 TAILNET=data/tailnet.json
-INVENTORY=inventories/hosts
+SUPPLEMENT=data/supplemental.yaml
+INVENTORY=inventories/hosts.yaml
 TRANSFORM=scripts/transform.py
 
-.PHONY: all inventory check_connectivity check_become
+.PHONY: all inventory check check_wg
 
 all: inventory
 
 inventory:
+	@echo "📡 Fetching latest Tailscale status..."
+	@tailscale status --json > $(TAILNET)
 	@echo "🧾 Building Ansible inventory from $(TAILNET)..."
-	@$(TRANSFORM)
+	@python3 $(TRANSFORM) --tailnet $(TAILNET) --supplement $(SUPPLEMENT) --output $(INVENTORY)
 	@echo "✅ Hosts listed in $(INVENTORY)"
 
-check_connectivity: inventory
-	@echo "🔌 Checking SSH connectivity..."
-	@ansible -i $(INVENTORY) all -m ping || true
+check: inventory
+	@echo "🧪 Checking SSH and become access..."
+	@ANSIBLE_HOST_KEY_CHECKING=False ansible all -i $(INVENTORY) -m command -a "id" -b || true
 
-check_become: inventory
-	@echo "🔐 Checking root access (via become)..."
-	@ansible -i $(INVENTORY) all -m command -a "id" -b || true
+check_wg: inventory
+	@echo "🔐 Checking WireGuard interfaces on all reachable hosts..."
+	@ANSIBLE_HOST_KEY_CHECKING=False ansible all -i $(INVENTORY) -m shell -a "wg show" -b || true
+
+clean:
+	rm -f data/tailnet.json inventories/hosts.yaml
