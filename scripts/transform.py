@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-import json, yaml, hmac, hashlib, base64, re
+import json, yaml, hmac, hashlib, base64, re, subprocess
 from pathlib import Path
 
-# Paths
 TAILNET_PATH = Path("data/tailnet.json")
 SUPPLEMENTAL_PATH = Path("data/supplemental.yaml")
 INVENTORY_PATH = Path("inventories/hosts.yaml")
 PRIVATE_KEY_DIR = Path("vault/privatekeys")
 PASSWORD_FILE = Path("vault/.pass")
 
-# Tag identifiers
 WG_TAG = "tag:wireguard"
 WG_SUBNET_TAG_PREFIX = "tag:wgnet-"
 
@@ -62,6 +60,15 @@ def ensure_private_keys(hosts):
         key_path.write_text(privkey + "\n")
         print(f"🔑 Generated key for {host}")
 
+def derive_public_key_from_file(private_key_path):
+    result = subprocess.run(
+        ["wg", "pubkey"],
+        input=Path(private_key_path).read_bytes(),
+        capture_output=True,
+        check=True
+    )
+    return result.stdout.decode().strip()
+
 def parse_wg_subnet(tags):
     for tag in tags:
         if tag.startswith(WG_SUBNET_TAG_PREFIX):
@@ -78,19 +85,18 @@ def pubkey_to_octet(pubkey: str) -> int:
     h = hashlib.sha256(raw).digest()
     return 100 + (h[0] % 100)
 
-def assign_wg_ips(inventory):
+def assign_wg_ips_and_pubkeys(inventory):
     for host, meta in inventory.items():
         key_path = PRIVATE_KEY_DIR / f"{host}.key"
         if not key_path.exists():
             continue
         privkey = key_path.read_text().strip()
-        pubkey = base64.b64encode(
-            hashlib.sha256(base64.b64decode(privkey)).digest()
-        ).decode()
+        pubkey = derive_public_key_from_file(key_path)
+        meta["public_key"] = pubkey
 
         base_ip, prefix = parse_wg_subnet(meta.get("tags", []))
         if base_ip is None:
-            print(f"⚠️  No wg-subnet tag found for {host}, skipping IP assign")
+            print(f"⚠  No wg-subnet tag found for {host}, skipping IP assign")
             continue
 
         last_octet = pubkey_to_octet(pubkey)
@@ -111,12 +117,10 @@ def main():
         print(f"➕ Merging supplemental data from {SUPPLEMENTAL_PATH}")
     merged = merge_static(SUPPLEMENTAL_PATH, base)
 
+    ensure_private_keys(merged.keys())
+    assign_wg_ips_and_pubkeys(merged)
     write_inventory(merged)
     print(f"✅ Done. {len(merged)} total hosts.")
-
-    ensure_private_keys(merged.keys())
-    assign_wg_ips(merged)
-    write_inventory(merged)
 
 if __name__ == "__main__":
     main()
