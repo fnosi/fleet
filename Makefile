@@ -9,6 +9,9 @@ TRANSFORM=scripts/transform.py
 
 all: inventory
 
+deps:
+	pip install -r requirements.txt
+
 inventory:
 	@echo "📡 Fetching latest Tailscale status..."
 	@tailscale status --json > $(TAILNET)
@@ -26,3 +29,8 @@ check_wg: inventory
 
 clean:
 	rm -f data/tailnet.json inventories/hosts.yaml
+
+
+render_configs:
+	./scripts/render_configs.py
+
