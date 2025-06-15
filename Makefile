@@ -8,10 +8,9 @@ OUTPUT=out/peers.yaml
 .PHONY: all inventory check_connectivity
 
 all: inventory
-
 inventory:
 	@echo "🔄 Generating inventory from $(TAILNET) and $(SUPPLEMENT)..."
-	@$(MERGE) --tailnet $(TAILNET) --supplement $(SUPPLEMENT) --output $(OUTPUT)
+	@python3 $(MERGE) --tailnet $(TAILNET) --supplement $(SUPPLEMENT) --output $(OUTPUT)
 	@echo "✅ Inventory written to $(OUTPUT)"
 
 check_connectivity:
