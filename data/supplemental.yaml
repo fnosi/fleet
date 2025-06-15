@@ -1,6 +1,10 @@
 mt-03:
-  node_id: mt03-offgrid
-  pubkey: ZYXWVUTSRQPONMLKJIHGfedcba==
   wg_ip: 10.0.5.11
-  roles: []
- 
+  pubkey: ZYXWVUTSRQPONMLKJIHGfedcba==
+  roles: ["relay"]
+
+offgrid1:
+  wg_ip: 10.0.5.99
+  pubkey: ABCDEFGHIJKLMNOP123456789==
+  roles: ["nat", "exit"]
+
