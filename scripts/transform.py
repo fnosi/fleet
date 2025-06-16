@@ -5,8 +5,8 @@ from pathlib import Path
 import subprocess
 
 # Paths
-TAILNET_PATH = Path("data/tailnet.json")
-SUPPLEMENTAL_PATH = Path("data/supplemental.yaml")
+TAILNET_PATH = Path("data/wireguard_nodes.json")
+SUPPLEMENTAL_PATH = Path("config/supplemental.yaml")
 INVENTORY_PATH = Path("inventories/hosts.yaml")
 PRIVATE_KEY_DIR = Path("vault/privatekeys")
 PASSWORD_FILE = Path("vault/.pass")
@@ -27,12 +27,17 @@ def load_tailnet(path):
         node_id = node.get("ID")
         if not name or WG_TAG not in tags:
             continue
-        result[name] = {
+        entry = {
             "id": node_id,
             "roles": [],
             "source": "tailnet",
             "tags": tags,
         }
+        # Include public_ip if present
+        if "PublicIP" in node:
+            entry["public_ip"] = node["PublicIP"]
+
+        result[name] = entry
     return result
 
 # Merge supplemental YAML
@@ -108,7 +113,6 @@ def assign_wg_ips_and_pubkeys(inventory):
             print(f"⚠  No wg-subnet tag found for {host}, skipping IP assign")
             continue
 
-        # Try to assign an octet in 100-199 range, avoid collisions
         raw = base64.b64decode(pubkey.strip())
         h = hashlib.sha256(raw).digest()
         initial = 100 + (h[0] % 100)
@@ -142,8 +146,6 @@ def main():
         print(f"➕ Merging supplemental data from {SUPPLEMENTAL_PATH}")
     merged = merge_static(SUPPLEMENTAL_PATH, base)
 
-    # We print this in the called function
-    # print("🔐 Ensuring private keys for all hosts...")
     ensure_private_keys(merged.keys())
 
     assign_wg_ips_and_pubkeys(merged)
