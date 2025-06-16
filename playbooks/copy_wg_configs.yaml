@@ -1,0 +1,19 @@
+- name: Deploy WireGuard configuration to all hosts
+  hosts: all
+  become: true
+  tasks:
+    - name: Ensure /etc/wireguard exists
+      file:
+        path: /etc/wireguard
+        state: directory
+        mode: '0755'
+
+    - name: Copy rendered WireGuard config to host
+      copy:
+        src: "out/{{ inventory_hostname }}/wgkaronti0.conf"
+        dest: "/etc/wireguard/wgkaronti0.conf"
+        owner: root
+        group: root
+        mode: '0600'
+      ignore_errors: yes  # Optional: allows partial deployment if some hosts are unreachable
+
