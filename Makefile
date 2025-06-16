@@ -1,11 +1,11 @@
 # Makefile for WireGuard automation
 
-TAILNET=data/tailnet.json
-SUPPLEMENT=data/supplemental.yaml
+WG_NODES_JSON=data/wireguard_nodes.json
+SUPPLEMENT=config/supplemental.yaml
 INVENTORY=inventories/hosts.yaml
 TRANSFORM=scripts/transform.py
 
-.PHONY: all inventory check check_wg
+.PHONY: all inventory check check_wg clean render_configs
 
 all: inventory
 
@@ -13,10 +13,10 @@ deps:
 	pip install -r requirements.txt
 
 inventory:
-	@echo "📡 Fetching latest Tailscale status..."
-	@tailscale status --json > $(TAILNET)
-	@echo "🧾 Building Ansible inventory from $(TAILNET)..."
-	@python3 $(TRANSFORM) --tailnet $(TAILNET) --supplement $(SUPPLEMENT) --output $(INVENTORY)
+	@echo "📡 Fetching enriched WireGuard node info via Tailscale + SSH..."
+	@./scripts/fetch_wireguard_enabled_nodes.py > $(WG_NODES_JSON)
+	@echo "🧾 Building Ansible inventory from $(WG_NODES_JSON)..."
+	@python3 $(TRANSFORM) --tailnet $(WG_NODES_JSON) --supplement $(SUPPLEMENT) --output $(INVENTORY)
 
 check: inventory
 	@echo "🧪 Checking SSH and become access..."
@@ -27,8 +27,7 @@ check_wg: inventory
 	@ANSIBLE_HOST_KEY_CHECKING=False ansible all -i $(INVENTORY) -m shell -a "wg show" -b || true
 
 clean:
-	rm -f data/tailnet.json inventories/hosts.yaml
-
+	rm -f $(WG_NODES_JSON) $(INVENTORY)
 
 render_configs:
 	./scripts/render_configs.py
