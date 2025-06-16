@@ -2,6 +2,10 @@
 PrivateKey = {{ private_key }}
 Address = {{ wg_address }}/{{ wg_cidr.split('/')[-1] }}
 ListenPort = 51820
+PostUp = iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+PostUp = iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+PreDown = iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE || true
+PreDown = iptables -t mangle -D FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu || true
 
 {% for peer in peers %}
 [Peer]
