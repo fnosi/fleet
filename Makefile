@@ -17,7 +17,6 @@ inventory:
 	@tailscale status --json > $(TAILNET)
 	@echo "🧾 Building Ansible inventory from $(TAILNET)..."
 	@python3 $(TRANSFORM) --tailnet $(TAILNET) --supplement $(SUPPLEMENT) --output $(INVENTORY)
-	@echo "✅ Hosts listed in $(INVENTORY)"
 
 check: inventory
 	@echo "🧪 Checking SSH and become access..."

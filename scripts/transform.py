@@ -142,13 +142,13 @@ def main():
         print(f"➕ Merging supplemental data from {SUPPLEMENTAL_PATH}")
     merged = merge_static(SUPPLEMENTAL_PATH, base)
 
-    print("🔐 Ensuring private keys for all hosts...")
+    # We print this in the called function
+    # print("🔐 Ensuring private keys for all hosts...")
     ensure_private_keys(merged.keys())
 
     assign_wg_ips_and_pubkeys(merged)
     write_inventory(merged)
-    print(f"✅ Done. {len(merged)} total hosts.")
-    print(f"✅ Hosts listed in {INVENTORY_PATH}")
+    print(f"✅ Done. {len(merged)} total hosts listed in {INVENTORY_PATH}.")
 
 if __name__ == "__main__":
     main()

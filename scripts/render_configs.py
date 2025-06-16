@@ -1,40 +1,33 @@
 #!/usr/bin/env python3
 
 import yaml
+import subprocess
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
-import subprocess
 
+# ─── Paths ────────────────────────────────────────────────────────────────────
 REPO_ROOT = Path(__file__).resolve().parent.parent
 VAULT_DIR = REPO_ROOT / "vault" / "privatekeys"
 INVENTORY_FILE = REPO_ROOT / "inventories" / "hosts.yaml"
 TEMPLATE_DIR = REPO_ROOT / "templates"
 OUT_DIR = REPO_ROOT / "out"
 
+# ─── Jinja Environment ────────────────────────────────────────────────────────
 env = Environment(loader=FileSystemLoader(str(TEMPLATE_DIR)))
 template = env.get_template("wgkaronti0.conf.j2")
 
+# ─── Load Inventory ───────────────────────────────────────────────────────────
 def load_inventory():
     with open(INVENTORY_FILE) as f:
         return yaml.safe_load(f)["all"]["hosts"]
 
-def load_private_key(hostname):
+# ─── Render Host Config ───────────────────────────────────────────────────────
+def render_host_config(hostname, hostdata, inventory):
     key_path = VAULT_DIR / f"{hostname}.key"
     if not key_path.exists():
         raise FileNotFoundError(f"[ERR] Missing private key: {key_path}")
-    return key_path.read_text().strip()
+    private_key = key_path.read_text().strip()
 
-def derive_public_key_from_file(key_path):
-    result = subprocess.run(
-        ["wg", "pubkey"],
-        input=Path(key_path).read_bytes(),
-        capture_output=True,
-        check=True
-    )
-    return result.stdout.decode().strip()
-
-def render_host_config(hostname, hostdata, inventory):
-    private_key = load_private_key(hostname)
     wg_address = hostdata["wg_address"]
     wg_cidr = hostdata["wg_cidr"]
     host_id = hostdata["id"]
@@ -44,9 +37,9 @@ def render_host_config(hostname, hostdata, inventory):
         if peerdata.get("id") == host_id:
             continue  # skip self
 
-        priv_key_path = VAULT_DIR / f"{peername}.key"
         peer = {
-            "public_key": derive_public_key_from_file(priv_key_path),
+            "name": peername,  # ← Needed for wg-info comment
+            "public_key": peerdata["public_key"],
             "wg_address": peerdata["wg_address"],
         }
 
@@ -70,6 +63,7 @@ def render_host_config(hostname, hostdata, inventory):
     config_file.write_text(rendered)
     print(f"[ok] Rendered: {config_file}")
 
+# ─── Entrypoint ───────────────────────────────────────────────────────────────
 def main():
     inventory = load_inventory()
     for hostname, hostdata in inventory.items():

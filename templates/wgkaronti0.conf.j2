@@ -5,6 +5,7 @@ ListenPort = 51820
 
 {% for peer in peers %}
 [Peer]
+# Name = {{ peer.name }}
 PublicKey = {{ peer.public_key }}
 AllowedIPs = {{ peer.wg_address }}/32
 {% if peer.endpoint -%}
