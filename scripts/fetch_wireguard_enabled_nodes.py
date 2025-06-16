@@ -6,14 +6,14 @@ import ipaddress
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-SSH_TIMEOUT = 15  # adjust as needed
+SSH_TIMEOUT = 7  # adjust as needed
 
 def get_tailscale_status_json():
     try:
         output = subprocess.check_output(["tailscale", "status", "--json"])
         return json.loads(output)
     except Exception as e:
-        print(f"[ERR] Failed to fetch tailscale status: {e}")
+        print(f"[ERR] Failed to fetch tailscale status: {e}", file=sys.stderr)
         return {}
 
 def is_public(ip_str):
@@ -37,9 +37,9 @@ def get_public_ip(hostname):
             if ip and is_public(ip):
                 return ip
     except subprocess.TimeoutExpired:
-        print(f"[TIMEOUT] {hostname} did not respond within {SSH_TIMEOUT}s")
+        print(f"[TIMEOUT] {hostname} did not respond within {SSH_TIMEOUT}s", file=sys.stderr)
     except Exception as e:
-        print(f"[ERR] {hostname} SSH error: {e}")
+        print(f"[ERR] {hostname} SSH error: {e}", file=sys.stderr)
     return None
 
 def main():
