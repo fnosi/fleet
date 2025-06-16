@@ -6,36 +6,57 @@ import ipaddress
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-INPUT_PATH = Path("data/tailnet.json")
 OUTPUT_PATH = Path("data/wireguard_nodes.json")
-MAX_PARALLEL = 10
+
+def get_tailscale_status_json():
+    try:
+        output = subprocess.check_output(["tailscale", "status", "--json"])
+        return json.loads(output)
+    except Exception as e:
+        print(f"[ERR] Failed to fetch tailscale status: {e}")
+        return {}
+
+def is_public(ip_str):
+    try:
+        ip = ipaddress.ip_address(ip_str)
+        return not ip.is_private and not ip.is_loopback and not ip.is_link_local
+    except ValueError:
+        return False
 
 def get_public_ip(hostname):
     try:
-        result = subprocess.check_output(
-            ["ssh", hostname, "ip --json route get 1.1.1.1"],
-            stderr=subprocess.DEVNULL,
-            timeout=5,
+        out = subprocess.check_output(
+            ["ssh", hostname, "ip", "--json", "route", "get", "1.1.1.1"],
+#            stderr=subprocess.DEVNULL,
+            timeout=7
         ).decode()
-        data = json.loads(result)
-        ip = data[0].get("prefsrc")
-        if ip and not ipaddress.ip_address(ip).is_private:
-            return ip
+        routes = json.loads(out)
+        if isinstance(routes, list) and routes:
+            ip = routes[0].get("prefsrc")
+            if ip and is_public(ip):
+                return ip
     except Exception:
-        return None
+        pass
+    return None
 
 def main():
-    with INPUT_PATH.open() as f:
-        full_data = json.load(f)
+    full_data = get_tailscale_status_json()
+    if not full_data:
+        return
 
-    wg_peers = {}
-    futures = {}
-    with ThreadPoolExecutor(max_workers=MAX_PARALLEL) as executor:
-        for nodekey, info in full_data.get("Peer", {}).items():
-            if "tag:wireguard" not in info.get("Tags", []):
-                continue
-            hostname = info.get("HostName")
-            futures[executor.submit(get_public_ip, hostname)] = (nodekey, info)
+    peers = full_data.get("Peer", {})
+    wg_peers = {
+        nodekey: info
+        for nodekey, info in peers.items()
+        if "tag:wireguard" in info.get("Tags", [])
+    }
+
+    # Fetch public IPs in parallel
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = {
+            executor.submit(get_public_ip, info["HostName"]): (nodekey, info)
+            for nodekey, info in wg_peers.items()
+        }
 
         for future in as_completed(futures):
             nodekey, info = futures[future]
@@ -44,6 +65,7 @@ def main():
                 info["PublicIP"] = pub_ip
             wg_peers[nodekey] = info
 
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with OUTPUT_PATH.open("w") as f:
         json.dump({"Peer": wg_peers}, f, indent=2)
 
