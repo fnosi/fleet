@@ -2,48 +2,47 @@
 
 import json
 import subprocess
-from pathlib import Path
 import ipaddress
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 INPUT_PATH = Path("data/tailnet.json")
 OUTPUT_PATH = Path("data/wireguard_nodes.json")
-
-def is_routable(ip):
-    try:
-        addr = ipaddress.ip_address(ip)
-        return not (addr.is_private or addr.is_loopback or addr.is_link_local)
-    except ValueError:
-        return False
+MAX_PARALLEL = 10
 
 def get_public_ip(hostname):
     try:
-        output = subprocess.check_output(
+        result = subprocess.check_output(
             ["ssh", hostname, "ip --json route get 1.1.1.1"],
             stderr=subprocess.DEVNULL,
-            timeout=5
+            timeout=5,
         ).decode()
-        route_info = json.loads(output)
-        if route_info and isinstance(route_info, list):
-            ip = route_info[0].get("prefsrc")
-            if ip and is_routable(ip):
-                return ip
+        data = json.loads(result)
+        ip = data[0].get("prefsrc")
+        if ip and not ipaddress.ip_address(ip).is_private:
+            return ip
     except Exception:
-        pass
-    return None
+        return None
 
 def main():
     with INPUT_PATH.open() as f:
         full_data = json.load(f)
 
     wg_peers = {}
-    for nodekey, info in full_data.get("Peer", {}).items():
-        if "tag:wireguard" not in info.get("Tags", []):
-            continue
-        hostname = info.get("HostName")
-        pub_ip = get_public_ip(hostname)
-        if pub_ip:
-            info["PublicIP"] = pub_ip
-        wg_peers[nodekey] = info
+    futures = {}
+    with ThreadPoolExecutor(max_workers=MAX_PARALLEL) as executor:
+        for nodekey, info in full_data.get("Peer", {}).items():
+            if "tag:wireguard" not in info.get("Tags", []):
+                continue
+            hostname = info.get("HostName")
+            futures[executor.submit(get_public_ip, hostname)] = (nodekey, info)
+
+        for future in as_completed(futures):
+            nodekey, info = futures[future]
+            pub_ip = future.result()
+            if pub_ip:
+                info["PublicIP"] = pub_ip
+            wg_peers[nodekey] = info
 
     with OUTPUT_PATH.open("w") as f:
         json.dump({"Peer": wg_peers}, f, indent=2)

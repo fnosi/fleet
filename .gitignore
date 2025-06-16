@@ -1,7 +1,6 @@
 # Ephemeral files
-data/tailnet.json
+data
 inventories/hosts.yaml
 localonly
 vault
-
 out
