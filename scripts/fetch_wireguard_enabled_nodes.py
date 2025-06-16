@@ -3,10 +3,7 @@
 import json
 import subprocess
 import ipaddress
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
-OUTPUT_PATH = Path("data/wireguard_nodes.json")
 
 def get_tailscale_status_json():
     try:
@@ -27,8 +24,7 @@ def get_public_ip(hostname):
     try:
         out = subprocess.check_output(
             ["ssh", hostname, "ip", "--json", "route", "get", "1.1.1.1"],
-#            stderr=subprocess.DEVNULL,
-            timeout=7
+            timeout=15
         ).decode()
         routes = json.loads(out)
         if isinstance(routes, list) and routes:
@@ -51,7 +47,6 @@ def main():
         if "tag:wireguard" in info.get("Tags", [])
     }
 
-    # Fetch public IPs in parallel
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = {
             executor.submit(get_public_ip, info["HostName"]): (nodekey, info)
@@ -65,11 +60,7 @@ def main():
                 info["PublicIP"] = pub_ip
             wg_peers[nodekey] = info
 
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with OUTPUT_PATH.open("w") as f:
-        json.dump({"Peer": wg_peers}, f, indent=2)
-
-    print(f"✅ Extracted {len(wg_peers)} WireGuard-enabled nodes to {OUTPUT_PATH}")
+    print(json.dumps({"Peer": wg_peers}, indent=2))
 
 if __name__ == "__main__":
     main()
