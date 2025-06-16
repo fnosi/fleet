@@ -127,7 +127,11 @@ def assign_wg_ips_and_pubkeys(inventory):
         if octet != initial:
             print(f"⚠  Collision avoided: assigned {octet} after offset {attempts} for pubkey {pubkey[:6]}...")
 
-        meta["wg_address"] = f"{base_ip}.{octet}"
+        # strip the last octet from the address (it is typically .0):
+        base_parts = base_ip.split(".")[:3]  # strip the .0
+        clean_base = ".".join(base_parts)
+        meta["wg_address"] = f"{clean_base}.{octet}"
+
         meta["wg_cidr"] = f"{base_ip}/{prefix}"
     return inventory
 
