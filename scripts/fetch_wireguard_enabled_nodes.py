@@ -4,6 +4,9 @@ import json
 import subprocess
 import ipaddress
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+
+SSH_TIMEOUT = 15  # adjust as needed
 
 def get_tailscale_status_json():
     try:
@@ -22,17 +25,21 @@ def is_public(ip_str):
 
 def get_public_ip(hostname):
     try:
-        out = subprocess.check_output(
+        proc = subprocess.Popen(
             ["ssh", hostname, "ip", "--json", "route", "get", "1.1.1.1"],
-            timeout=15
-        ).decode()
-        routes = json.loads(out)
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL
+        )
+        out, _ = proc.communicate(timeout=SSH_TIMEOUT)
+        routes = json.loads(out.decode())
         if isinstance(routes, list) and routes:
             ip = routes[0].get("prefsrc")
             if ip and is_public(ip):
                 return ip
-    except Exception:
-        pass
+    except subprocess.TimeoutExpired:
+        print(f"[TIMEOUT] {hostname} did not respond within {SSH_TIMEOUT}s")
+    except Exception as e:
+        print(f"[ERR] {hostname} SSH error: {e}")
     return None
 
 def main():
@@ -55,10 +62,12 @@ def main():
 
         for future in as_completed(futures):
             nodekey, info = futures[future]
-            pub_ip = future.result()
-            if pub_ip:
-                info["PublicIP"] = pub_ip
-            wg_peers[nodekey] = info
+            try:
+                pub_ip = future.result(timeout=SSH_TIMEOUT + 2)
+                if pub_ip:
+                    info["PublicIP"] = pub_ip
+            except Exception:
+                pass  # already logged
 
     print(json.dumps({"Peer": wg_peers}, indent=2))
 
