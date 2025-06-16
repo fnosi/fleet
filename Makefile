@@ -32,3 +32,17 @@ clean:
 render_configs:
 	./scripts/render_configs.py
 
+copy_configs:
+	@echo "🚀 Copying WireGuard configs to hosts via user SSH and sudo..."
+	@for host in $$(ls out); do \
+		cfg=out/$$host/wgkaronti0.conf; \
+		if [ -f $$cfg ]; then \
+			echo "📤 $$cfg → $$host:/etc/wireguard/"; \
+			timeout 5 scp $$cfg $$host:/tmp/wgkaronti0.conf && \
+			ssh $$host "sudo mv /tmp/wgkaronti0.conf /etc/wireguard/wgkaronti0.conf && sudo chmod 600 /etc/wireguard/wgkaronti0.conf" || \
+			echo "❌ Failed to copy or chmod for $$host"; \
+		else \
+			echo "❌ Config missing: $$cfg"; \
+		fi; \
+	done
+
