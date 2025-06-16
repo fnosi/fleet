@@ -37,11 +37,12 @@ def render_host_config(hostname, hostdata, inventory):
     private_key = load_private_key(hostname)
     wg_address = hostdata["wg_address"]
     wg_cidr = hostdata["wg_cidr"]
+    host_id = hostdata["id"]
 
     peers = []
     for peername, peerdata in inventory.items():
-        if peername == hostname:
-            continue  # ✅ SKIP SELF!
+        if peerdata.get("id") == host_id:
+            continue  # skip self
 
         priv_key_path = VAULT_DIR / f"{peername}.key"
         peer = {

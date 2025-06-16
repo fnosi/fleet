@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
-import json, yaml, hmac, hashlib, base64, re, subprocess
-from pathlib import Path
 
+import json, yaml, hmac, hashlib, base64, re
+from pathlib import Path
+import subprocess
+
+# Paths
 TAILNET_PATH = Path("data/tailnet.json")
 SUPPLEMENTAL_PATH = Path("data/supplemental.yaml")
 INVENTORY_PATH = Path("inventories/hosts.yaml")
 PRIVATE_KEY_DIR = Path("vault/privatekeys")
 PASSWORD_FILE = Path("vault/.pass")
 
+# Tag identifiers
 WG_TAG = "tag:wireguard"
 WG_SUBNET_TAG_PREFIX = "tag:wgnet-"
 
+# Load tailnet data
 def load_tailnet(path):
     with open(path) as f:
         data = json.load(f)
@@ -19,15 +24,18 @@ def load_tailnet(path):
     for node in data.get("Peer", {}).values():
         name = node.get("HostName")
         tags = node.get("Tags", [])
+        node_id = node.get("ID")
         if not name or WG_TAG not in tags:
             continue
         result[name] = {
+            "id": node_id,
             "roles": [],
             "source": "tailnet",
             "tags": tags,
         }
     return result
 
+# Merge supplemental YAML
 def merge_static(path, base):
     if not path.exists():
         return base
@@ -41,10 +49,12 @@ def merge_static(path, base):
             base[host].update(overrides)
     return base
 
+# Derive private key (legacy logic)
 def derive_private_key(hostname, master_secret):
     key = hmac.new(master_secret.encode(), hostname.encode(), hashlib.sha256).digest()
     return base64.b64encode(key[:32]).decode()
 
+# Create missing private keys
 def ensure_private_keys(hosts):
     if not PASSWORD_FILE.exists():
         raise FileNotFoundError(f"Missing password file at {PASSWORD_FILE}")
@@ -60,15 +70,7 @@ def ensure_private_keys(hosts):
         key_path.write_text(privkey + "\n")
         print(f"🔑 Generated key for {host}")
 
-def derive_public_key_from_file(private_key_path):
-    result = subprocess.run(
-        ["wg", "pubkey"],
-        input=Path(private_key_path).read_bytes(),
-        capture_output=True,
-        check=True
-    )
-    return result.stdout.decode().strip()
-
+# Get WG subnet from tags
 def parse_wg_subnet(tags):
     for tag in tags:
         if tag.startswith(WG_SUBNET_TAG_PREFIX):
@@ -80,17 +82,24 @@ def parse_wg_subnet(tags):
                 return base, prefix
     return None, None
 
-def pubkey_to_octet(pubkey: str) -> int:
-    raw = base64.b64decode(pubkey.strip())
-    h = hashlib.sha256(raw).digest()
-    return 100 + (h[0] % 100)
+# Run `wg pubkey` for a private key file
+def derive_public_key_from_file(private_key_path):
+    result = subprocess.run(
+        ["wg", "pubkey"],
+        input=Path(private_key_path).read_bytes(),
+        capture_output=True,
+        check=True
+    )
+    return result.stdout.decode().strip()
 
+# Avoid collisions by linear probing
 def assign_wg_ips_and_pubkeys(inventory):
+    used = {}
     for host, meta in inventory.items():
         key_path = PRIVATE_KEY_DIR / f"{host}.key"
         if not key_path.exists():
             continue
-        privkey = key_path.read_text().strip()
+
         pubkey = derive_public_key_from_file(key_path)
         meta["public_key"] = pubkey
 
@@ -99,16 +108,32 @@ def assign_wg_ips_and_pubkeys(inventory):
             print(f"⚠  No wg-subnet tag found for {host}, skipping IP assign")
             continue
 
-        last_octet = pubkey_to_octet(pubkey)
-        meta["wg_address"] = f"{base_ip}.{last_octet}"
+        # Try to assign an octet in 100-199 range, avoid collisions
+        raw = base64.b64decode(pubkey.strip())
+        h = hashlib.sha256(raw).digest()
+        initial = 100 + (h[0] % 100)
+        octet = initial
+        attempts = 0
+        while octet in used.get(base_ip, set()):
+            octet = 100 + ((octet + 1) % 100)
+            attempts += 1
+            if attempts > 100:
+                raise ValueError(f"Too many collisions assigning IP for {host}")
+        used.setdefault(base_ip, set()).add(octet)
+        if octet != initial:
+            print(f"⚠  Collision avoided: assigned {octet} after offset {attempts} for pubkey {pubkey[:6]}...")
+
+        meta["wg_address"] = f"{base_ip}.{octet}"
         meta["wg_cidr"] = f"{base_ip}/{prefix}"
     return inventory
 
+# Write inventory file to disk
 def write_inventory(inventory):
     ordered = dict(sorted(inventory.items()))
     with INVENTORY_PATH.open("w") as f:
         yaml.dump({"all": {"hosts": ordered}}, f, sort_keys=False)
 
+# Entrypoint
 def main():
     print(f"📥 Reading Tailscale data from {TAILNET_PATH}")
     base = load_tailnet(TAILNET_PATH)
@@ -117,10 +142,13 @@ def main():
         print(f"➕ Merging supplemental data from {SUPPLEMENTAL_PATH}")
     merged = merge_static(SUPPLEMENTAL_PATH, base)
 
+    print("🔐 Ensuring private keys for all hosts...")
     ensure_private_keys(merged.keys())
+
     assign_wg_ips_and_pubkeys(merged)
     write_inventory(merged)
     print(f"✅ Done. {len(merged)} total hosts.")
+    print(f"✅ Hosts listed in {INVENTORY_PATH}")
 
 if __name__ == "__main__":
     main()

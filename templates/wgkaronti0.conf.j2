@@ -1,16 +1,16 @@
 [Interface]
 PrivateKey = {{ private_key }}
-Address = {{ wg_address }}/{{ wg_cidr }}
+Address = {{ wg_address }}/{{ wg_cidr.split('/')[-1] }}
 ListenPort = 51820
 
 {% for peer in peers %}
 [Peer]
 PublicKey = {{ peer.public_key }}
 AllowedIPs = {{ peer.wg_address }}/32
-{% if peer.endpoint %}
+{% if peer.endpoint -%}
 Endpoint = {{ peer.endpoint }}
 {% endif %}
-{% if peer.persistent_keepalive %}
+{% if peer.persistent_keepalive -%}
 PersistentKeepalive = {{ peer.persistent_keepalive }}
 {% endif %}
 {% endfor %}
