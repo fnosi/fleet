@@ -14,7 +14,7 @@ PublicKey = {{ peer.public_key }}
 AllowedIPs = {{ peer.wg_address }}/32
 {% if peer.endpoint -%}
 Endpoint = {{ peer.endpoint }}
-{% endif %}
+{% endif -%}
 {% if peer.persistent_keepalive -%}
 PersistentKeepalive = {{ peer.persistent_keepalive }}
 {% endif %}

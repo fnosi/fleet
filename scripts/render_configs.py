@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import yaml
-import subprocess
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
@@ -38,14 +37,18 @@ def render_host_config(hostname, hostdata, inventory):
             continue  # skip self
 
         peer = {
-            "name": peername,  # ← Needed for wg-info comment
+            "name": peername,
             "public_key": peerdata["public_key"],
             "wg_address": peerdata["wg_address"],
         }
 
-        if peerdata.get("public_ip"):
-            peer["endpoint"] = f"{peerdata['public_ip']}:51820"
-        elif peerdata.get("nat") or "nat" in peerdata.get("tags", []):
+        # Add endpoint only if public IP is known
+        pubip = peerdata.get("public_ip")
+        if pubip:
+            peer["endpoint"] = f"{pubip}:51820"
+
+        # Enable keepalive for NAT cases or if endpoint is unknown
+        if "nat" in peerdata.get("tags", []) or not pubip:
             peer["persistent_keepalive"] = 25
 
         peers.append(peer)
