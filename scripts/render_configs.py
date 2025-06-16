@@ -42,13 +42,10 @@ def render_host_config(hostname, hostdata, inventory):
             "wg_address": peerdata["wg_address"],
         }
 
-        # Add endpoint only if public IP is known
+        # Add endpoint and enable keepalive only if peer has a public IP.
         pubip = peerdata.get("public_ip")
         if pubip:
             peer["endpoint"] = f"{pubip}:51820"
-
-        # Enable keepalive for NAT cases or if endpoint is unknown
-        if "nat" in peerdata.get("tags", []) or not pubip:
             peer["persistent_keepalive"] = 25
 
         peers.append(peer)

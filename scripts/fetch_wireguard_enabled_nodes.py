@@ -3,6 +3,7 @@
 import json
 import subprocess
 import ipaddress
+import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -46,6 +47,13 @@ def main():
     full_data = get_tailscale_status_json()
     if not full_data:
         return
+
+    # Include Self as a pseudo-peer if relevant
+    self_data = full_data.get("Self", {})
+    if "HostName" in self_data and "tag:wireguard" in self_data.get("Tags", []):
+        self_key = self_data.get("PublicKey")
+        if self_key:
+            full_data.setdefault("Peer", {})[self_key] = self_data
 
     peers = full_data.get("Peer", {})
     wg_peers = {
