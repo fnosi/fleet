@@ -29,8 +29,8 @@ check_wg: inventory
 clean:
 	rm -f $(WG_NODES_JSON) $(INVENTORY)
 
-render_configs:
-	./scripts/render_configs.py
+generate_configs:
+	./scripts/generate_wg_configs_linux.py
 
 copy_configs:
 	@echo "🚀 Deploying WireGuard configs via Ansible..."
